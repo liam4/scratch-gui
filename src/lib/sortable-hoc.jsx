@@ -9,7 +9,8 @@ const SortableHOC = function (WrappedComponent) {
         constructor (props) {
             super(props);
             bindAll(this, [
-                'setRef',
+                'setContainerRef',
+                'setScrollRef',
                 'handleAddSortable',
                 'handleRemoveSortable'
             ]);
@@ -17,7 +18,11 @@ const SortableHOC = function (WrappedComponent) {
             this.sortableRefs = [];
             this.boxes = null;
             this.ref = null;
+            this.scrollRef = null;
             this.containerBox = null;
+            this.initialScrollPosition = null;
+            this.scrollTop = 0;
+            this.scrollLeft = 0;
         }
 
         componentWillReceiveProps (newProps) {
@@ -32,6 +37,13 @@ const SortableHOC = function (WrappedComponent) {
                     throw new Error('The containerRef must be assigned to the sortable area');
                 }
                 this.containerBox = this.ref.getBoundingClientRect();
+                if (!this.scrollRef) {
+                    throw new Error('The scrollRef must be assigned to the scrollable area');
+                }
+                this.initialScrollPosition = {
+                    x: this.scrollRef.scrollLeft,
+                    y: this.scrollTop
+                };
             } else if (!newProps.dragInfo.dragging && this.props.dragInfo.dragging) {
                 const newIndex = this.getMouseOverIndex();
                 if (newIndex !== null) {
@@ -75,35 +87,61 @@ const SortableHOC = function (WrappedComponent) {
             // Return null if outside the container, zero if there are no boxes.
             let mouseOverIndex = null;
             if (this.props.dragInfo.currentOffset) {
-                const {x, y} = this.props.dragInfo.currentOffset;
+                let {x, y} = this.props.dragInfo.currentOffset;
                 const {top, left, bottom, right} = this.containerBox;
+                if (this.scrollTop !== 0) {
+                    console.log('Pre:', y >= top, y);
+                }
                 if (x >= left && x <= right && y >= top && y <= bottom) {
+                    console.log('-- Post:', y >= top, y);
+                    console.log('-- Scroll:', this.scrollTop);
+                    // x += this.scrollOffset.x;
+                    y += this.scrollTop - this.initialScrollPosition.y;
+                    if (this.scrollTop !== 0) {
+                        // console.log(this.ref.scrollTop, this.initialScrollPosition.y);
+                        // console.log(this.scrollRef.scrollTop - this.initialScrollPosition.y);
+                    }
                     if (this.boxes.length === 0) {
                         mouseOverIndex = 0;
                     } else {
-                        mouseOverIndex = indexForPositionOnList(
-                            this.props.dragInfo.currentOffset, this.boxes);
+                        mouseOverIndex = indexForPositionOnList({x, y}, this.boxes);
                     }
                 }
             }
             return mouseOverIndex;
         }
-        setRef (el) {
+
+        setContainerRef (el) {
             this.ref = el;
         }
+
+        setScrollRef (el) {
+            this.scrollRef = el;
+
+            // *** PROBABLY IRRELEVANT. ***
+            // Doesn't fix the bug of flickering when you drag over the very
+            // top of the scrollable area. For future writing: just use these
+            // values directly in math, i.e. this.scrollRef.scrollTop, etc.
+            this.scrollRef.addEventListener('scroll', () => {
+                this.scrollLeft = el.scrollLeft;
+                this.scrollTop = el.scrollTop;
+            });
+        }
+
         render () {
             const {dragInfo: {index: dragIndex, dragType}, items} = this.props;
             const mouseOverIndex = this.getMouseOverIndex();
             const ordering = this.getOrdering(items, dragIndex, mouseOverIndex);
             return (
                 <WrappedComponent
-                    containerRef={this.setRef}
+                    containerRef={this.setContainerRef}
                     draggingIndex={dragIndex}
                     draggingType={dragType}
                     mouseOverIndex={mouseOverIndex}
                     ordering={ordering}
                     onAddSortable={this.handleAddSortable}
                     onRemoveSortable={this.handleRemoveSortable}
+                    scrollRef={this.setScrollRef}
                     {...this.props}
                 />
             );

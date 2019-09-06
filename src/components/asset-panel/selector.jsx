@@ -26,7 +26,8 @@ const Selector = props => {
         onDeleteClick,
         onDuplicateClick,
         onExportClick,
-        onItemClick
+        onItemClick,
+        scrollRef
     } = props;
 
     const isRelevantDrag = draggingType === dragType;
@@ -54,7 +55,10 @@ const Selector = props => {
             className={styles.wrapper}
             componentRef={containerRef}
         >
-            <Box className={styles.listArea}>
+            <Box
+                className={styles.listArea}
+                componentRef={scrollRef}
+            >
                 {items.map((item, index) => (
                     <SortableAsset
                         id={item.name}
@@ -112,6 +116,7 @@ Selector.propTypes = {
     onItemClick: PropTypes.func.isRequired,
     onRemoveSortable: PropTypes.func,
     ordering: PropTypes.arrayOf(PropTypes.number),
+    scrollRef: PropTypes.func,
     selectedItemIndex: PropTypes.number.isRequired
 };
 

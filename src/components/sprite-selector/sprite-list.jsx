@@ -29,6 +29,7 @@ const SpriteList = function (props) {
         onRemoveSortable,
         ordering,
         raised,
+        scrollRef,
         selectedId,
         items
     } = props;
@@ -44,6 +45,7 @@ const SpriteList = function (props) {
         >
             <Box
                 className={styles.itemsWrapper}
+                componentRef={scrollRef}
             >
                 {items.map((sprite, index) => {
 
@@ -132,6 +134,7 @@ SpriteList.propTypes = {
     onSelectSprite: PropTypes.func,
     ordering: PropTypes.arrayOf(PropTypes.number),
     raised: PropTypes.bool,
+    scrollRef: PropTypes.func,
     selectedId: PropTypes.string
 };
 
